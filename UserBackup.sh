@@ -10,7 +10,7 @@ USER_LIST="/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print
 
 function Backup(){
     newDir="/Volumes/Backup/"$SELECTEDUSER""
-    bckUp="/Volumes/Backup"
+    BACK_UP="/Volumes/Backup"
     tranFer="/Users/"$SELECTEDUSER""
 
     #Create Backup mount point
@@ -20,7 +20,7 @@ function Backup(){
     # adminname : Adminpwrd@"Folder location on server 
     # Example Below
 
-    sudo mount_smbfs -s "//;"$adminName":"$adminPwrd"@XX.XXX.XXX.XXX/Foldername""" "/Volumes/Backup"
+    sudo mount_smbfs -s "//;"$USERNAME":"$PASSWORD"@XX.XXX.XXX.XXX/Foldername""" "$BACK_UP"
 
     wait
 
@@ -64,7 +64,7 @@ dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
             --textfield Admin-Password,secure 
 "
 PASSWORD=$(eval "$dialogCMD2"| grep "Admin-Password" | awk -F " : " '{print $NF}')
-	echo "${PASSWORD}"
+	#echo "${PASSWORD}"
 
 
 
@@ -74,5 +74,5 @@ SELECTEDUSER="$(osascript << 'EOF'
 	    set userName to choose from list localUsers with title "Select User to Backup" with prompt "Please select which user to Backup:"
     EOF)"
 
-SELECTEDUSER
+SELECTEDUSER ; Backup
 
