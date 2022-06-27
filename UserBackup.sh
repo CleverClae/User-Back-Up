@@ -1,25 +1,102 @@
 #!/bin/zsh
 
-
 ORG_NAME="Your Organization Name"
 UMESSAGE="What is your username?"
 PMESSAGE="What is your Password?"
 USMESSAGE="Select the User"
 ICON_LOGO="/Library/Application\ Support/JAMF/Jamf.app/Contents/Resources/AppIcon.icns"
 
-function Backup(){
+function dialog_command(){
+  echo "$1"
+  echo "$1"  >> $dialog_command_file
+}
+
+function Installdialog() {
+	gitusername="bartreardon"
+	gitreponame="swiftDialog"
+	appNewVersion=$(curl --silent --fail "https://api.github.com/repos/$gitusername/$gitreponame/releases/latest" | grep tag_name | cut -d '"' -f 4 | sed 's/[^0-9\.]//g')
+	if [ -z "$appNewVersion" ]; then
+		echo "could not retrieve version number for $gitusername/$gitreponame"
+		appNewVersion=""
+	else
+		/bin/echo "Dialog WebSite Version: $appNewVersion"
+	fi
+	if ! test -d "${dialogAppLocation}"; then # Look to see if the Dialog App is Installed
+		echo "Dialog App is not Installed"
+		localDialogVersion="0.1"
+	else
+		localDialogVersion=$(dialog -v) # uses dialog variable set at top of Script
+		/bin/echo "Dialog Local Version: $localDialogVersion"
+	fi
+	if [ ! "(dialog)" ] || [ "$localDialogVersion" != "$appNewVersion" ]; then # Check to See if Dialog is Installed and the Current Version
+		## Variables for Dialog download
+		expectedTeamID="PWA5E9TQ59"
+		archiveName="/private/tmp/dialog.pkg"
+		downloadURL=$(curl --silent --fail "https://api.github.com/repos/$gitusername/$gitreponame/releases/latest"| awk -F '"' "/browser_download_url/ { print \$4; exit }")
+		/bin/echo "Current Dialog version is $localDialogVersion. The latest is $appNewVersion"
+		if [[ "$localDialogVersion" == "$appNewVersion" ]]; then
+			/bin/echo "Latest verison of Dialog installed"
+		else
+			/bin/echo "Dialog is either not installed or is not the latest version, downloading"
+			if ! curl --silent -L --fail "$downloadURL" -o "$archiveName"; then ## Download Dialog
+				/bin/echo "Error downloading $downloadURL"
+				/bin/echo "Dialog download failed."
+				if test -f "$archiveName"; then
+					/bin/rm -f "$archiveName"
+				fi
+				Exit_Process 190
+			fi
+			if ! spctlout=$(spctl -a -vv -t install "$archiveName" 2>&1 ); then
+				/bin/echo "Error verifying $archiveName"
+				if test -f "$archiveName"; then
+					/bin/rm -f "$archiveName"
+				fi
+				Exit_Process 191
+			else
+				teamID=$(/bin/echo "$spctlout" | awk -F '(' '/origin=/ {print $2 }' | tr -d '()' ) ## Check to make sure it's a valid PKG from the creator
+				/bin/echo "Downloaded PKG Team ID: $teamID / Expected Team ID: $expectedTeamID"
+				if [ "$expectedTeamID" != "$teamID" ]; then
+					/bin/echo "Team IDs do not match"
+					if test -f "$archiveName"; then
+						/bin/rm -f "$archiveName"
+					fi
+					Exit_Process 192
+				fi
+			fi
+			if ! installer -pkg "$archiveName" -tgt "/"; then ## Install Dialog
+				/bin/echo  "Error installing $archiveName"
+				if test -f "$archiveName"; then
+					/bin/rm -f "$archiveName"
+				fi
+				Exit_Process 193
+			else
+				/bin/echo "Dialog Installed."
+				if test -f "$archiveName"; then
+					/bin/rm -f "$archiveName"
+					/bin/echo "Dialog Installer Removed"
+				fi
+			fi
+		fi
+	else
+		echo "Dialog Installed, Moving on..."
+	fi
+}
+
+Installdialog
+
+function Backup() {
     newDir="/Volumes/Backup/"$SELECTEDUSER""
     BACK_UP="/Volumes/Backup"
     tranFer="/Users/"$SELECTEDUSER""
 
     #Create Backup mount point
-    sudo mkdir  -p "/Volumes/Backup"
+    sudo mkdir -p "/Volumes/Backup"
     # Mounts PCBackup share UserData Folder
 
-    # adminname : Adminpwrd@"Folder location on server 
+    # adminname : Adminpwrd@"Folder location on server
     # Example Below
 
-    sudo mount_smbfs -s "//;"$USERNAME":"$PASSWORD"@XX.XXX.XXX.XXX/Foldername""" "$BACK_UP"
+    sudo mount_smbfs -s "//;"$USERNAME":"$PASSWORD"@10.193.153.106/PCBackup""" "/Volumes/Backup"
 
     wait
 
@@ -28,8 +105,8 @@ function Backup(){
 
     # Feel free to modify --Exclude. Must use '' with proper folder name
     sudo /usr/bin/rsync -avzrog --ignore-errors --force --progress --stats --verbose \
-    --exclude='.DS_Store' --exclude='.Trash' --exclude='iTunes' --exclude='Library' --exclude='Movies' --exclude='Music' --exclude='Pictures' --exclude='Public' --exclude='.*' --exclude='.*/' \
-    "/Users/$SELECTEDUSER" "/Volumes/Backup/$SELECTEDUSER" && wait
+        --exclude='.DS_Store' --exclude='.Trash' --exclude='iTunes' --exclude='Library' --exclude='Movies' --exclude='Music' --exclude='Pictures' --exclude='Public' --exclude='.*' --exclude='.*/' \
+        "/Users/$SELECTEDUSER" "/Volumes/Backup/$SELECTEDUSER" && wait
 
     sudo umount -fv "$bckUP"
 }
@@ -44,14 +121,10 @@ dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
 			--button1text OK \
 			--quitkey b \
             --message  \"${UMESSAGE}\" \
-            --textfield Username
+            --textfield Username 
 "
-USERNAME=$(eval "$dialogCMD1"| grep "Username" | awk -F " : " '{print $NF}')
-	echo "${USERNAME}"
-
-
-
-
+USERNAME=$(eval "$dialogCMD1" | grep "Username" | awk -F " : " '{print $NF}')
+#echo "${USERNAME}"
 
 dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
             --alignment "center" \
@@ -65,11 +138,11 @@ dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
             --message  \"${PMESSAGE}\" \
             --textfield Admin-Password,secure 
 "
-PASSWORD=$(eval "$dialogCMD2"| grep "Admin-Password" | awk -F " : " '{print $NF}')
-	#echo "${PASSWORD}"
+PASSWORD=$(eval "$dialogCMD2" | grep "Admin-Password" | awk -F " : " '{print $NF}')
+#echo "${PASSWORD}"
 
 line=($(/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 ","}'))
-echo "${line[*]}"
+#echo "${line[*]}"
 
 UMESSAGE="Please select the username"
 ORG_NAME="Your Organization Name"
@@ -88,11 +161,10 @@ dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
 			--quitkey b \
             --message  \"${UMESSAGE}\" \
 "
-SELECTEDUSER=$(eval "$dialogCMD1"| grep "SelectedOption" | awk -F " : " '{print $NF}')
+SELECTEDUSER=$(eval "$dialogCMD1" | grep "SelectedOption" | awk -F " : " '{print $NF}')
 
 echo "$SELECTEDUSER"
 
 Backup
 
 exit 0
-
