@@ -2,9 +2,9 @@
 
 ORG_NAME="Your Organization Name"
 UMESSAGE="What is your username?"
-PMESSAGE="What is your Password?"
+PMESSAGE="What is your Network Password?"
 USMESSAGE="Select the User"
-ICON_LOGO="/Library/Application\ Support/JAMF/Jamf.app/Contents/Resources/AppIcon.icns"
+ICON_LOGO="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericFileServerIcon.icns"
 
 function dialog_command(){
   echo "$1"
@@ -104,6 +104,8 @@ function Backup() {
         "/Users/$SELECTEDUSER" "/Volumes/Backup/" && wait
 
     #sudo umount -fv "$bckUP"  
+	dialog -ps --title "${ORG_NAME}"  --alignment "center" --centericon true --iconsize "250" --messagefont size=24 --messagefont bold --icon "$ICON_LOGO" --button1text OK --quitkey b --message  "Backup Complete \n Please check the client files and folders \n "
+
 }
 
 dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
@@ -156,18 +158,18 @@ SELECTEDUSER=$(eval "$dialogCMD3" | grep "SelectedOption" | awk -F " : " '{print
 
 echo "$SELECTEDUSER"
 
-dialogCMD4="dialog -ps --title \"${ORG_NAME}\" \
-            --alignment "center" \
-            --centericon true \
-            --iconsize "250" \
-            --messagefont size=24 \
-			--messagefont bold \
-            --icon "$ICON_LOGO" \
-			--button1text OK \
-			--quitkey b \
-            --message  "Backup Complete"\
+dialogCMD4="dialog -ps --title "${ORG_NAME}" 
+            --alignment "center" 
+            --centericon true 
+            --iconsize "250" 
+            --messagefont size=24 
+			--messagefont bold 
+            --icon "$ICON_LOGO" 
+			--button1text OK 
+			--quitkey b 
+            --message  "Backup Complete"
 "
 
-Backup ; eval "$dialogCMD4"
+Backup 
 
 exit 0
