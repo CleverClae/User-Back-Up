@@ -121,8 +121,8 @@ dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
 			--button1text OK \
 			--quitkey b \
             --message  \"${UMESSAGE}\" \
-            --textfield Username 
-"
+            --textfield Username,required \
+            "
 USERNAME=$(eval "$dialogCMD1" | grep "Username" | awk -F " : " '{print $NF}')
 #echo "${USERNAME}"
 
@@ -136,7 +136,7 @@ dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
 			--button1text OK \
 			--quitkey b \
             --message  \"${PMESSAGE}\" \
-            --textfield Admin-Password,secure 
+            --textfield Admin-Password,secure,required \
 "
 PASSWORD=$(eval "$dialogCMD2" | grep "Admin-Password" | awk -F " : " '{print $NF}')
 #echo "${PASSWORD}"
@@ -144,11 +144,7 @@ PASSWORD=$(eval "$dialogCMD2" | grep "Admin-Password" | awk -F " : " '{print $NF
 line=($(/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 ","}'))
 #echo "${line[*]}"
 
-UMESSAGE="Please select the username"
-ORG_NAME="Your Organization Name"
-ICON_LOGO="/Library/Application\ Support/JAMF/Jamf.app/Contents/Resources/AppIcon.icns"
-
-dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
+dialogCMD3="dialog -ps --title \"${ORG_NAME}\" \
             --alignment "center" \
             --centericon true \
             --iconsize "250" \
@@ -161,7 +157,7 @@ dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
 			--quitkey b \
             --message  \"${UMESSAGE}\" \
 "
-SELECTEDUSER=$(eval "$dialogCMD1" | grep "SelectedOption" | awk -F " : " '{print $NF}')
+SELECTEDUSER=$(eval "$dialogCMD3" | grep "SelectedOption" | awk -F " : " '{print $NF}')
 
 echo "$SELECTEDUSER"
 
