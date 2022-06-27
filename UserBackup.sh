@@ -1,12 +1,11 @@
 #!/bin/zsh
 
 
-ORG_NAME="IPG Health"
+ORG_NAME="Your Organization Name"
 UMESSAGE="What is your username?"
 PMESSAGE="What is your Password?"
 USMESSAGE="Select the User"
 ICON_LOGO="/Library/Application\ Support/JAMF/Jamf.app/Contents/Resources/AppIcon.icns"
-USER_LIST="/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 }'"
 
 function Backup(){
     newDir="/Volumes/Backup/"$SELECTEDUSER""
@@ -51,6 +50,9 @@ USERNAME=$(eval "$dialogCMD1"| grep "Username" | awk -F " : " '{print $NF}')
 	echo "${USERNAME}"
 
 
+
+
+
 dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
             --alignment "center" \
             --centericon true \
@@ -66,13 +68,31 @@ dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
 PASSWORD=$(eval "$dialogCMD2"| grep "Admin-Password" | awk -F " : " '{print $NF}')
 	#echo "${PASSWORD}"
 
+line=($(/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 ","}'))
+echo "${line[*]}"
 
+UMESSAGE="Please select the username"
+ORG_NAME="Your Organization Name"
+ICON_LOGO="/Library/Application\ Support/JAMF/Jamf.app/Contents/Resources/AppIcon.icns"
 
-SELECTEDUSER="$(osascript << 'EOF'
-	    set localUsers to do shell script "/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 }'"
-	    set localUsers to paragraphs of localUsers
-	    set userName to choose from list localUsers with title "Select User to Backup" with prompt "Please select which user to Backup:"
-    EOF)"
+dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
+            --alignment "center" \
+            --centericon true \
+            --iconsize "250" \
+            --messagefont size=24 \
+			--messagefont bold \
+            --icon "$ICON_LOGO" \
+            --selecttitle Select User \
+            --selectvalues \"${line[*]}\" \
+			--button1text OK \
+			--quitkey b \
+            --message  \"${UMESSAGE}\" \
+"
+SELECTEDUSER=$(eval "$dialogCMD1"| grep "SelectedOption" | awk -F " : " '{print $NF}')
 
-SELECTEDUSER ; Backup
+echo "$SELECTEDUSER"
+
+Backup
+
+exit 0
 
