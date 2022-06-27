@@ -85,9 +85,6 @@ function Installdialog() {
 Installdialog
 
 function Backup() {
-    newDir="/Volumes/Backup/"$SELECTEDUSER""
-    BACK_UP="/Volumes/Backup"
-    tranFer="/Users/"$SELECTEDUSER""
 
     #Create Backup mount point
     sudo mkdir -p "/Volumes/Backup"
@@ -99,16 +96,14 @@ function Backup() {
     sudo mount_smbfs -s "//;"$USERNAME":"$PASSWORD"@10.193.153.106/PCBackup""" "/Volumes/Backup"
 
     wait
-
-    sudo mkdir "/Volumes/Backup/$SELECTEDUSER"
     # Begin Transfer from client machine to backup server with folders excluded
 
     # Feel free to modify --Exclude. Must use '' with proper folder name
     sudo /usr/bin/rsync -avzrog --ignore-errors --force --progress --stats --verbose \
         --exclude='.DS_Store' --exclude='.Trash' --exclude='iTunes' --exclude='Library' --exclude='Movies' --exclude='Music' --exclude='Pictures' --exclude='Public' --exclude='.*' --exclude='.*/' \
-        "/Users/$SELECTEDUSER" "/Volumes/Backup/$SELECTEDUSER" && wait
+        "/Users/$SELECTEDUSER" "/Volumes/Backup/" && wait
 
-    sudo umount -fv "$bckUP"
+    #sudo umount -fv "$bckUP"  
 }
 
 dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
@@ -124,7 +119,7 @@ dialogCMD1="dialog -ps --title \"${ORG_NAME}\" \
             --textfield Username,required \
             "
 USERNAME=$(eval "$dialogCMD1" | grep "Username" | awk -F " : " '{print $NF}')
-#echo "${USERNAME}"
+
 
 dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
             --alignment "center" \
@@ -137,12 +132,12 @@ dialogCMD2="dialog -ps  --title \"${ORG_NAME}\" \
 			--quitkey b \
             --message  \"${PMESSAGE}\" \
             --textfield Admin-Password,secure,required \
-"
+	"
 PASSWORD=$(eval "$dialogCMD2" | grep "Admin-Password" | awk -F " : " '{print $NF}')
-#echo "${PASSWORD}"
+
 
 line=($(/usr/bin/dscl . list /Users UniqueID | /usr/bin/awk '$2 > 500 { print $1 ","}'))
-#echo "${line[*]}"
+
 
 dialogCMD3="dialog -ps --title \"${ORG_NAME}\" \
             --alignment "center" \
@@ -161,6 +156,18 @@ SELECTEDUSER=$(eval "$dialogCMD3" | grep "SelectedOption" | awk -F " : " '{print
 
 echo "$SELECTEDUSER"
 
-Backup
+dialogCMD4="dialog -ps --title \"${ORG_NAME}\" \
+            --alignment "center" \
+            --centericon true \
+            --iconsize "250" \
+            --messagefont size=24 \
+			--messagefont bold \
+            --icon "$ICON_LOGO" \
+			--button1text OK \
+			--quitkey b \
+            --message  "Backup Complete"\
+"
+
+Backup ; eval "$dialogCMD4"
 
 exit 0
